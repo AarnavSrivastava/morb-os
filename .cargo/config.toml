@@ -6,3 +6,6 @@ build-std-features = ["compiler-builtins-mem"]
 [build]
 # target = "aarch64-morb_os.json"
 target = "x86_64-morb_os.json"
+
+[target.'cfg(target_os = "none")']
+runner = "bootimage runner"
