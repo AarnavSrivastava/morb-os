@@ -39,5 +39,12 @@ struct Selectors {
 }
 
 pub fn init() {
-    GDT.load();
+    use x86_64::instructions::tables::load_tss;
+    use x86_64::instructions::segmentation::{CS, Segment};
+    
+    GDT.0.load();
+    unsafe {
+        CS::set_reg(GDT.1.code_selector);
+        load_tss(GDT.1.tss_selector);
+    }
 }
