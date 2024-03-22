@@ -12,7 +12,7 @@ use morb_os::{QemuExitCode, exit_qemu, serial_println};
 pub extern "C" fn _start() -> ! {
     test_main();
 
-    loop {}
+    morb_os::hlt_loop();
 }
 
 pub fn test_runner(tests: &[&dyn Fn()]) {
@@ -29,7 +29,7 @@ pub fn test_runner(tests: &[&dyn Fn()]) {
 fn panic(_info: &PanicInfo) -> ! {
     serial_println!("[ok]");
     exit_qemu(QemuExitCode::Success);
-    loop {}
+    morb_os::hlt_loop();
 }
 
 #[test_case]
