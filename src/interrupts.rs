@@ -1,6 +1,6 @@
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use lazy_static::lazy_static;
-use crate::{gdt, println, print};
+use crate::{gdt, print, println, vga_buffer::{self, WRITER}};
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -22,7 +22,7 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    print!(".");
+    // WRITER.lo
 
     unsafe {
         PICS.lock()

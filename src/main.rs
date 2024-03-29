@@ -4,42 +4,49 @@
 #![test_runner(morb_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+extern crate alloc;
+
 use core::panic::PanicInfo;
 
 use morb_os::println;
 use bootloader::{BootInfo, entry_point};
+use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
 
 entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
-    use morb_os::memory;
-    use x86_64::{structures::paging::Translate, VirtAddr};
-
+    use morb_os::{memory::{self, BootInfoFrameAllocator}, allocator};
+    use x86_64::VirtAddr;
 
     println!("Hello World{}", "!");
     morb_os::init();
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
-    // new: initialize a mapper
-    let mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator = unsafe {
+        BootInfoFrameAllocator::init(&boot_info.memory_map)
+    };
 
-    let addresses = [
-        // the identity-mapped vga buffer page
-        0xb8000,
-        // some code page
-        0x201008,
-        // some stack page
-        0x0100_0020_1a10,
-        // virtual address mapped to physical address 0
-        boot_info.physical_memory_offset,
-    ];
+    allocator::init_heap(&mut mapper, &mut frame_allocator)
+        .expect("heap initialization failed");
 
-    for &address in &addresses {
-        let virt = VirtAddr::new(address);
-        // new: use the `mapper.translate_addr` method
-        let phys = mapper.translate_addr(virt);
-        println!("{:?} -> {:?}", virt, phys);
+    // allocate a number on the heap
+    let heap_value = Box::new(41);
+    println!("heap_value at {:p}", heap_value);
+
+    // create a dynamically sized vector
+    let mut vec = Vec::new();
+    for i in 0..500 {
+        vec.push(i);
     }
+    println!("vec at {:p}", vec.as_slice());
+
+    // create a reference counted vector -> will be freed when count reaches 0
+    let reference_counted = Rc::new(vec![1, 2, 3]);
+    let cloned_reference = reference_counted.clone();
+    println!("current reference count is {}", Rc::strong_count(&cloned_reference));
+    core::mem::drop(reference_counted);
+    println!("reference count is {} now", Rc::strong_count(&cloned_reference));
 
     #[cfg(test)]
     test_main();
