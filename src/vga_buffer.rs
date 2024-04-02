@@ -96,6 +96,31 @@ impl Writer {
         }
     }
 
+    // Deletes a single byte from the current cursor position
+    pub fn delete_byte(&mut self) {
+        // Ensure there are characters to delete
+        if self.column_position > 0 {
+            let row = BUFFER_HEIGHT - 1;
+            let col = self.column_position; // Move one position left to delete
+
+            // Shift characters to the left
+            for c in col..(BUFFER_WIDTH - 1) {
+                let next_char = self.buffer.chars[row][c + 1].read();
+                self.buffer.chars[row][c].write(next_char);
+            }
+
+            // Clear the last character position
+            let blank = ScreenChar {
+                ascii_character: b' ',
+                color_code: self.color_code,
+            };
+            self.buffer.chars[row][BUFFER_WIDTH - 1].write(blank);
+
+            // Update column position
+            self.column_position -= 1;
+        }
+    }
+
     // in the case the byte is \n character or we reach the end of the buffer
     fn new_line(&mut self) {
         for row in 1..BUFFER_HEIGHT {
@@ -162,6 +187,11 @@ macro_rules! print {
 }
 
 #[macro_export]
+macro_rules! delete {
+    ($($arg:tt)*) => ($crate::vga_buffer::_delete());
+}
+
+#[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
@@ -176,6 +206,17 @@ pub fn _print(args: fmt::Arguments) {
     // prevents deadlocks
     interrupts::without_interrupts(|| {
         WRITER.lock().write_fmt(args).unwrap();
+    });
+}
+
+#[doc(hidden)]
+pub fn _delete() {
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
+
+    // prevents deadlocks
+    interrupts::without_interrupts(|| {
+        WRITER.lock().delete_byte();
     });
 }
 

@@ -1,6 +1,7 @@
+use pc_keyboard::KeyCode;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use lazy_static::lazy_static;
-use crate::{gdt, print, println, vga_buffer::{self, WRITER}};
+use crate::{gdt, print, println, delete, serial_print, vga_buffer::{self, WRITER}};
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -51,8 +52,16 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
         if let Some(key) = keyboard.process_keyevent(key_event) {
             match key {
-                DecodedKey::Unicode(character) => print!("{}", character),
-                DecodedKey::RawKey(key) => print!("{:?}", key),
+                DecodedKey::RawKey(KeyCode::Delete) => {
+                    println!("Delete key pressed!");
+                    // Perform your desired action here
+                },
+                DecodedKey::Unicode(character) => {
+                    print!("{}", character);
+                },
+                DecodedKey::RawKey(key) => {
+                    print!("{:?}", key);
+                },
             }
         }
     }

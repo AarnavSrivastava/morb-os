@@ -14,6 +14,14 @@ struct ListNode {
 /// Blocks are premade and allocated as such.
 const BLOCK_SIZES: &[usize] = &[8, 16, 32, 64, 128, 256, 512, 1024, 2048];
 
+/// Choose an appropriate block size for the given layout.
+///
+/// Returns an index into the `BLOCK_SIZES` array.
+fn list_index(layout: &Layout) -> Option<usize> {
+    let required_block_size = layout.size().max(layout.align());
+    BLOCK_SIZES.iter().position(|&s| s >= required_block_size)
+}
+
 pub struct FixedSizeBlockAllocator {
     list_heads: [Option<&'static mut ListNode>; BLOCK_SIZES.len()],
     fallback_allocator: linked_list_allocator::Heap,
@@ -44,14 +52,6 @@ impl FixedSizeBlockAllocator {
             Ok(ptr) => ptr.as_ptr(),
             Err(_) => ptr::null_mut(),
         }
-    }
-
-    /// Choose an appropriate block size for the given layout.
-    ///
-    /// Returns an index into the `BLOCK_SIZES` array.
-    fn list_index(layout: &Layout) -> Option<usize> {
-        let required_block_size = layout.size().max(layout.align());
-        BLOCK_SIZES.iter().position(|&s| s >= required_block_size)
     }
 }
 
