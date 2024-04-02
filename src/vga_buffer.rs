@@ -5,6 +5,8 @@ use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
 
+use crate::interrupts::{TICKER, TICKER_BOOLEAN};
+
 // represent colors as numbers -- 0x0 = Black, 0x1 = Blue, etc.
 // C-like enum allows us to specify the number for each color, stored as a u8 thanks to repr(u8)
 #[allow(dead_code)]
@@ -99,9 +101,9 @@ impl Writer {
     // Deletes a single byte from the current cursor position
     pub fn delete_byte(&mut self) {
         // Ensure there are characters to delete
-        if self.column_position > 0 {
+        if self.column_position > 2 {
             let row = BUFFER_HEIGHT - 1;
-            let col = self.column_position; // Move one position left to delete
+            let col = self.column_position - 1; // Move one position left to delete
 
             // Shift characters to the left
             for c in col..(BUFFER_WIDTH - 1) {
@@ -123,7 +125,7 @@ impl Writer {
 
     // in the case the byte is \n character or we reach the end of the buffer
     fn new_line(&mut self) {
-        for row in 1..BUFFER_HEIGHT {
+        for row in 2..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
                 let character = self.buffer.chars[row][col].read();
                 self.buffer.chars[row - 1][col].write(character);
@@ -135,6 +137,9 @@ impl Writer {
 
         // send the buffer back to the beginning
         self.column_position = 0;
+
+        self.write_byte(0x3E);
+        self.write_byte(b' ');
     }
 
     fn clear_row(&mut self, row: usize) {
@@ -142,7 +147,7 @@ impl Writer {
             ascii_character: b' ',
             color_code: self.color_code,
         };
-        for col in 0..BUFFER_WIDTH {
+        for col in 1..BUFFER_WIDTH {
             self.buffer.chars[row][col].write(blank);
         }
     }
@@ -158,6 +163,49 @@ impl Writer {
             }
 
         }
+    }
+
+    pub fn write_cursor(&mut self) {
+        if self.column_position >= BUFFER_WIDTH {
+            self.new_line();
+        }
+
+        let row = BUFFER_HEIGHT - 1;
+        let col = self.column_position;
+
+        let color_code = self.color_code;
+        // self.buffer.chars[row][col] = ScreenChar {
+        //     ascii_character: byte,
+        //     color_code,
+        // };
+
+        let mut ticker_guard = TICKER.lock();
+        let mut ticker_boolean_guard = TICKER_BOOLEAN.lock();
+
+        let mut ticker = *ticker_guard;
+        let mut ticker_boolean = *ticker_boolean_guard;
+
+        if ticker == 10 {
+            if ticker_boolean {
+                self.buffer.chars[row][col].write(ScreenChar {
+                    ascii_character: 0x7C,
+                    color_code,
+                });
+            } else {
+                self.buffer.chars[row][col].write(ScreenChar {
+                    ascii_character: b' ',
+                    color_code,
+                });
+            }
+
+            *ticker_guard = 0;
+        } else {
+            *ticker_guard += 1;
+        }
+
+        *ticker_boolean_guard = !ticker_boolean;
+        drop(ticker_guard);
+        drop(ticker_boolean_guard);
     }
 }
 
@@ -197,6 +245,11 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
+#[macro_export]
+macro_rules! write_cursor {
+    ($($arg:tt)*) => ($crate::vga_buffer::_write_cursor());
+}
+
 // a helper function to print out stuff using our buffer 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
@@ -211,12 +264,21 @@ pub fn _print(args: fmt::Arguments) {
 
 #[doc(hidden)]
 pub fn _delete() {
-    use core::fmt::Write;
     use x86_64::instructions::interrupts;
 
     // prevents deadlocks
     interrupts::without_interrupts(|| {
         WRITER.lock().delete_byte();
+    });
+}
+
+#[doc(hidden)]
+pub fn _write_cursor() {
+    use x86_64::instructions::interrupts;
+
+    // prevents deadlocks
+    interrupts::without_interrupts(|| {
+        WRITER.lock().write_cursor();
     });
 }
 

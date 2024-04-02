@@ -18,7 +18,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     use morb_os::{memory::{self, BootInfoFrameAllocator}, allocator};
     use x86_64::VirtAddr;
 
-    println!("Hello World{}", "!");
+    println!("Booting system up...");
     morb_os::init();
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
@@ -52,6 +52,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     test_main();
 
     println!("It did not crash!");
+    println!("MorbOS is live!");
     morb_os::hlt_loop();
 }
 

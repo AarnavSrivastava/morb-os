@@ -1,7 +1,8 @@
 use pc_keyboard::KeyCode;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use lazy_static::lazy_static;
-use crate::{gdt, print, println, delete, serial_print, vga_buffer::{self, WRITER}};
+use crate::{delete, gdt, print, println, serial_print, vga_buffer::{self, WRITER}, write_cursor};
+use spin::Mutex;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -22,8 +23,13 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
 }
 
+lazy_static! {
+    pub static ref TICKER: Mutex<u32> = Mutex::new(0);
+    pub static ref TICKER_BOOLEAN: Mutex<bool> = Mutex::new(true);
+}
+
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    // WRITER.lo
+    write_cursor!();
 
     unsafe {
         PICS.lock()
@@ -37,6 +43,10 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
     use spin::Mutex;
     use x86_64::instructions::port::Port;
+
+    let mut ticker_guard = TICKER.lock();
+    *ticker_guard = 0;
+    drop(ticker_guard);
 
     lazy_static! {
         static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> =
@@ -52,12 +62,12 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
         if let Some(key) = keyboard.process_keyevent(key_event) {
             match key {
-                DecodedKey::RawKey(KeyCode::Delete) => {
-                    println!("Delete key pressed!");
-                    // Perform your desired action here
-                },
                 DecodedKey::Unicode(character) => {
-                    print!("{}", character);
+                    if character == '\u{8}' {
+                        delete!();
+                    } else {
+                        print!("{}", character);
+                    }
                 },
                 DecodedKey::RawKey(key) => {
                     print!("{:?}", key);
