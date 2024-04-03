@@ -1,7 +1,7 @@
 use pc_keyboard::KeyCode;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use lazy_static::lazy_static;
-use crate::{delete, gdt, print, println, serial_print, vga_buffer::{self, WRITER}, write_cursor};
+use crate::{delete, gdt, print, println, write_cursor};
 use spin::Mutex;
 
 #[derive(Debug, Clone, Copy)]
@@ -70,7 +70,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
                     }
                 },
                 DecodedKey::RawKey(key) => {
-                    print!("{:?}", key);
+                    // TODO: add handling for special keys
                 },
             }
         }

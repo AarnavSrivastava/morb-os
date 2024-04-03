@@ -57,13 +57,13 @@ impl FixedSizeBlockAllocator {
 
 unsafe impl GlobalAlloc for Locked<FixedSizeBlockAllocator> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        /// get a mutable version of the wrapped allocator instance
+        // get a mutable version of the wrapped allocator instance
         let mut allocator = self.lock();
 
-        /// find list index for the passed layout
-        /// index == None --> fallback allocator to allocate custom amount of memory
-        /// index == Some --> remove the corresponding list head if available and assign 
-        /// the memory space to the task; if not available, fallback allocation
+        // find list index for the passed layout
+        // index == None --> fallback allocator to allocate custom amount of memory
+        // index == Some --> remove the corresponding list head if available and assign 
+        // the memory space to the task; if not available, fallback allocation
         match list_index(&layout) {
             Some(index) => {
                 match allocator.list_heads[index].take() {
@@ -89,8 +89,8 @@ unsafe impl GlobalAlloc for Locked<FixedSizeBlockAllocator> {
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         let mut allocator = self.lock();
 
-        /// find the index corresponding to the layout --> when found dealloc
-        /// if layout does not correspond to any index --> use fallback allocator to dealloc
+        // find the index corresponding to the layout --> when found dealloc
+        // if layout does not correspond to any index --> use fallback allocator to dealloc
         match list_index(&layout) {
             Some(index) => {
                 let new_node = ListNode {

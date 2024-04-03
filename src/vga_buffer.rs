@@ -182,8 +182,8 @@ impl Writer {
         let mut ticker_guard = TICKER.lock();
         let mut ticker_boolean_guard = TICKER_BOOLEAN.lock();
 
-        let mut ticker = *ticker_guard;
-        let mut ticker_boolean = *ticker_boolean_guard;
+        let ticker = *ticker_guard;
+        let ticker_boolean = *ticker_boolean_guard;
 
         if ticker == 10 {
             if ticker_boolean {
