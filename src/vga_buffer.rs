@@ -7,6 +7,8 @@ use spin::Mutex;
 
 use crate::interrupts::{TICKER, TICKER_BOOLEAN};
 
+use crate::println;
+
 // represent colors as numbers -- 0x0 = Black, 0x1 = Blue, etc.
 // C-like enum allows us to specify the number for each color, stored as a u8 thanks to repr(u8)
 #[allow(dead_code)]
@@ -147,8 +149,15 @@ impl Writer {
             ascii_character: b' ',
             color_code: self.color_code,
         };
-        for col in 1..BUFFER_WIDTH {
+        for col in 2..BUFFER_WIDTH {
             self.buffer.chars[row][col].write(blank);
+        }
+
+        for col in 2..BUFFER_WIDTH {
+            let character = self.buffer.chars[row - 1][col].read().ascii_character;
+            if character == 0xB1 {
+                self.buffer.chars[row - 1][col].write(blank);
+            }
         }
     }
 
@@ -173,7 +182,7 @@ impl Writer {
         let row = BUFFER_HEIGHT - 1;
         let col = self.column_position;
 
-        let color_code = self.color_code;
+        let color_code = ColorCode::new(Color::White, Color::Black);
         // self.buffer.chars[row][col] = ScreenChar {
         //     ascii_character: byte,
         //     color_code,
@@ -188,7 +197,7 @@ impl Writer {
         if ticker == 10 {
             if ticker_boolean {
                 self.buffer.chars[row][col].write(ScreenChar {
-                    ascii_character: 0x7C,
+                    ascii_character: 0xB1,
                     color_code,
                 });
             } else {

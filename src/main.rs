@@ -8,7 +8,7 @@ extern crate alloc;
 
 use core::panic::PanicInfo;
 
-use morb_os::println;
+use morb_os::{println, vga_buffer::OS_LIVE};
 use bootloader::{BootInfo, entry_point};
 // use alloc::{boxed::Box, vec, vec::Vec, rc::Rc};
 
@@ -53,6 +53,8 @@ fn kernel_main(_boot_info: &'static BootInfo) -> ! {
 
     println!("It did not crash!");
     println!("MorbOS is live!");
+
+    *OS_LIVE.lock() = true;
     morb_os::hlt_loop();
 }
 
