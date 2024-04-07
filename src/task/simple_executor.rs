@@ -1,6 +1,6 @@
 use super::Task;
 use alloc::collections::VecDeque;
-use core::task::{Waker, RawWaker, RawWakerVTable, Context, Poll};
+use core::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 
 pub struct SimpleExecutor {
     task_queue: VecDeque<Task>,
@@ -29,12 +29,6 @@ impl SimpleExecutor {
     }
 }
 
-/**
- * RawWaker --> requires programmer to explicity define a virtual method table (vtable) 
- * that specifies functions that should be called when the RawWaker type is initialized.
- * 
- */
-
 fn dummy_raw_waker() -> RawWaker {
     fn no_op(_: *const ()) {}
     fn clone(_: *const ()) -> RawWaker {
@@ -44,6 +38,12 @@ fn dummy_raw_waker() -> RawWaker {
     let vtable = &RawWakerVTable::new(clone, no_op, no_op, no_op);
     RawWaker::new(0 as *const (), vtable)
 }
+
+/*
+ * RawWaker --> requires programmer to explicity define a virtual method table (vtable) 
+ * that specifies functions that should be called when the RawWaker type is initialized.
+ * 
+*/
 
 fn dummy_waker() -> Waker {
     unsafe { Waker::from_raw(dummy_raw_waker()) }

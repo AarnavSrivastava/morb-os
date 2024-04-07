@@ -34,13 +34,13 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
+    println!("It did not crash!");
+    println!("MorbOS is live!");
+
     let mut executor = SimpleExecutor::new();
     executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
     executor.run();
-
-    println!("It did not crash!");
-    println!("MorbOS is live!");
 
     morb_os::hlt_loop();
 }
