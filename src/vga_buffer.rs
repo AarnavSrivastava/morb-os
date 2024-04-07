@@ -7,8 +7,6 @@ use spin::Mutex;
 
 use crate::interrupts::{TICKER, TICKER_BOOLEAN};
 
-use crate::println;
-
 // represent colors as numbers -- 0x0 = Black, 0x1 = Blue, etc.
 // C-like enum allows us to specify the number for each color, stored as a u8 thanks to repr(u8)
 #[allow(dead_code)]
