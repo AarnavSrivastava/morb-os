@@ -1,4 +1,4 @@
-use crate::{print, println, delete};
+use crate::{delete, print, println};
 use conquer_once::spin::OnceCell;
 use core::{
     pin::Pin,
@@ -77,13 +77,16 @@ pub async fn print_keypresses() {
                     DecodedKey::Unicode(character) => {
                         if character == '\u{8}' {
                             delete!();
+                        } else if character == '\u{9}' {
+                            print!("    ");
                         } else {
                             print!("{}", character);
                         }
                     },
                     DecodedKey::RawKey(key) => {
                         // TODO: add handling for special keys
-                        println!("{:?}", key);
+                        // Potential future task: keybindings for specific commands?
+                        // GUI compatibility?
                     },
                 }
             }
