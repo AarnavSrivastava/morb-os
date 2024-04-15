@@ -1,4 +1,3 @@
-use alloc::string::{self, String};
 use volatile::Volatile;
 // volatile allows us to add safety for future rust versions
 use core::fmt;
@@ -97,7 +96,7 @@ impl Writer {
     // Deletes a single byte from the current cursor position
     pub fn delete_byte(&mut self) {
         // Ensure there are characters to delete
-        if self.column_position > 0 {
+        if self.column_position > 2 {
             let row = BUFFER_HEIGHT - 1;
             let col = self.column_position - 1; // Move one position left to delete
 
@@ -134,8 +133,8 @@ impl Writer {
         // send the buffer back to the beginning
         self.column_position = 0;
 
-        // self.write_byte(0x3E);
-        // self.write_byte(b' ');
+        self.write_byte(0x3E);
+        self.write_byte(b' ');
     }
 
     fn clear_row(&mut self, row: usize) {
@@ -143,16 +142,16 @@ impl Writer {
             ascii_character: b' ',
             color_code: self.color_code,
         };
-        for col in 0..BUFFER_WIDTH {
+        for col in 2..BUFFER_WIDTH {
             self.buffer.chars[row][col].write(blank);
         }
 
-        // for col in 2..BUFFER_WIDTH {
-        //     let character = self.buffer.chars[row - 1][col].read().ascii_character;
-        //     if character == 0xB1 {
-        //         self.buffer.chars[row - 1][col].write(blank);
-        //     }
-        // }
+        for col in 2..BUFFER_WIDTH {
+            let character = self.buffer.chars[row - 1][col].read().ascii_character;
+            if character == 0xB1 {
+                self.buffer.chars[row - 1][col].write(blank);
+            }
+        }
     }
 
     // writes whole strings by taking bytes and printing them one-by-one
@@ -177,10 +176,6 @@ impl Writer {
         let col = self.column_position;
 
         let color_code = ColorCode::new(Color::White, Color::Black);
-        // self.buffer.chars[row][col] = ScreenChar {
-        //     ascii_character: byte,
-        //     color_code,
-        // };
 
         let mut ticker_guard = TICKER.lock();
         let mut ticker_boolean_guard = TICKER_BOOLEAN.lock();

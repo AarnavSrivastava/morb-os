@@ -8,6 +8,7 @@ extern crate alloc;
 
 use core::panic::PanicInfo;
 
+use morb_os::allocator::HEAP_SIZE;
 use morb_os::println;
 use bootloader::{BootInfo, entry_point};
 use morb_os::task::{Task, simple_executor::SimpleExecutor};
@@ -31,10 +32,11 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     allocator::init_heap(&mut mapper, &mut frame_allocator)
         .expect("heap initialization failed");
 
+    println!("Memory Available: {:?} KBs", HEAP_SIZE / 1024);
+
     #[cfg(test)]
     test_main();
 
-    println!("It did not crash!");
     println!("MorbOS is live!");
 
     let mut executor = SimpleExecutor::new();

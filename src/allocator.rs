@@ -8,6 +8,7 @@ use x86_64::{
 pub mod bump;
 pub mod linked_list;
 pub mod fixed_size_block;
+pub mod buddy;
 
 use fixed_size_block::FixedSizeBlockAllocator;
 
